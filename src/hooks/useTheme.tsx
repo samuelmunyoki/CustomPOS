@@ -133,20 +133,45 @@ const colorThemes: Record<ThemeColor, { primary: string; secondary: string; acce
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const [mode, setModeState] = useState<ThemeMode>('light');
-  const [primaryColor, setPrimaryColorState] = useState<ThemeColor>('pink');
+  const [primaryColor, setPrimaryColorState] = useState<ThemeColor>('green');
   const [themeConfig, setThemeConfigState] = useState<ThemeConfig | null>(null);
   const [isDark, setIsDark] = useState(false);
+
+  // Initialize theme from saved settings on app load
+  useEffect(() => {
+    if (!settingsLoading && settings?.themeConfig) {
+      console.log('Applying saved theme config on app launch:', settings.themeConfig);
+      const savedTheme = settings.themeConfig as any;
+      
+      // Parse if it's a string
+      const themeData = typeof savedTheme === 'string' ? JSON.parse(savedTheme) : savedTheme;
+      
+      setThemeConfigState({
+        primaryHue: themeData.primaryHue || 150,
+        primarySaturation: themeData.primarySaturation || 74,
+        primaryLightness: themeData.primaryLightness || 41,
+        borderRadius: themeData.borderRadius || 0.75,
+        fontScale: themeData.fontScale || 1,
+        primaryColor: themeData.primaryColor || `hsl(${themeData.primaryHue || 150}, ${themeData.primarySaturation || 74}%, ${themeData.primaryLightness || 41}%)`
+      });
+    }
+  }, [settings, settingsLoading]);
 
   // Load theme config from settings when available
   useEffect(() => {
     if (settings?.themeConfig) {
       console.log('Loading theme config from settings:', settings.themeConfig);
-      setThemeConfigState(settings.themeConfig);
+      const savedTheme = settings.themeConfig as any;
+      
+      // Parse if it's a string
+      const themeData = typeof savedTheme === 'string' ? JSON.parse(savedTheme) : savedTheme;
+      
+      setThemeConfigState(themeData);
       
       // Apply theme config to CSS variables
-      const { primaryHue, primarySaturation, primaryLightness, borderRadius } = settings.themeConfig;
+      const { primaryHue, primarySaturation, primaryLightness, borderRadius } = themeData;
       const root = document.documentElement;
       
       root.style.setProperty('--theme-hue', String(primaryHue));

@@ -1,10 +1,10 @@
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { ThemeProvider, useTheme } from '@/hooks/useTheme';
+import { useSettings } from '@/hooks/useSettings';
 import { initDatabase } from '@/lib/database';
 import { Toaster } from 'sonner';
 import { useState, useEffect } from 'react';
 
-// Pages
 import LoginPage from '@/pages/LoginPage';
 import POSPage from '@/pages/POSPage';
 import AdminDashboard from '@/pages/AdminDashboard';
@@ -20,18 +20,27 @@ import PrintersPage from '@/pages/PrintersPage';
 import BarcodesPage from '@/pages/BarcodesPage';
 import HeldSalesPage from '@/pages/HeldSalesPage';
 
-// Components
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { ThemeConfig } from './types';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { isDark } = useTheme();
+  const { settings, loading: settingsLoading } = useSettings();
   const [dbInitialized, setDbInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState('pos');
+    const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
+      primaryHue: 222,
+      primarySaturation: 47,
+      primaryLightness: 11,
+      borderRadius: 0.75,
+      fontScale: 1,
+      primaryColor: '#720931'
+    });
 
   useEffect(() => {
     const init = async () => {
@@ -46,13 +55,68 @@ function AppContent() {
     init();
   }, []);
 
-  if (isLoading || !dbInitialized) {
+  useEffect(() => {
+    if (dbInitialized && !settingsLoading && settings) {
+      console.log('Applying all saved settings on app launch:', settings);
+      
+      if (settings.currency) {
+        document.documentElement.setAttribute('data-currency', settings.currency);
+        document.documentElement.setAttribute('data-currency-symbol', settings.currencySymbol || 'KSh');
+      }
+      
+      if (settings.taxEnabled !== undefined) {
+        document.documentElement.setAttribute('data-tax-enabled', String(settings.taxEnabled));
+      }
+      
+      if (settings.vatEnabled !== undefined) {
+        document.documentElement.setAttribute('data-vat-enabled', String(settings.vatEnabled));
+      }
+      
+      if (settings.storeName) {
+        document.documentElement.setAttribute('data-store-name', settings.storeName);
+      }
+    }
+
+    
+    const {
+      primaryHue = 222,
+      primarySaturation = 47,
+      primaryLightness = 11,
+      borderRadius = 0.75,
+    } = themeConfig;
+
+     const root = document.documentElement;
+
+    const isDark = primaryLightness < 50;
+    const foregroundHue = primaryHue;
+    const foregroundSaturation = primarySaturation;
+    const foregroundLightness = isDark ? 98 : 2; 
+
+    root.style.setProperty('--theme-hue', String(primaryHue));
+    root.style.setProperty('--theme-saturation', `${primarySaturation}%`);
+    root.style.setProperty('--theme-lightness', `${primaryLightness}%`);
+    
+    root.style.setProperty('--primary', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+    
+    root.style.setProperty('--primary-foreground', `${foregroundHue} ${foregroundSaturation}% ${foregroundLightness}%`);
+    
+    root.style.setProperty('--ring', `${primaryHue} ${primarySaturation}% ${primaryLightness}%`);
+    root.style.setProperty('--radius', `${borderRadius}rem`);
+    
+    const borderLightness = isDark ? Math.min(primaryLightness + 15, 95) : Math.max(primaryLightness - 15, 5);
+  
+    root.style.setProperty('--input', `${primaryHue} ${primarySaturation}% 95%`);
+    root.style.setProperty('--background', `${primaryHue} ${primarySaturation}% 100%`);
+   
+  }, [dbInitialized, settingsLoading, settings]);
+
+  if (isLoading || !dbInitialized || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-muted-foreground">
-            {!dbInitialized ? 'Initializing database...' : 'Loading...'}
+            {!dbInitialized ? 'Initializing database...' : settingsLoading ? 'Loading settings...' : 'Loading...'}
           </p>
         </div>
       </div>
@@ -79,7 +143,6 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  // Attendants can only access POS
   if (user.role === 'attendant' && currentPage !== 'pos' && currentPage !== 'held-sales') {
     setCurrentPage('pos');
   }

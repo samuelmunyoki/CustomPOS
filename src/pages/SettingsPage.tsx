@@ -42,11 +42,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 const PRESET_COLORS = [
-  { name: 'Slate', hue: 215, sat: 20, light: 25, class: 'bg-slate-600' },
-  { name: 'Gray', hue: 220, sat: 13, light: 31, class: 'bg-gray-600' },
-  { name: 'Zinc', hue: 240, sat: 5, light: 26, class: 'bg-zinc-600' },
-  { name: 'Neutral', hue: 0, sat: 0, light: 25, class: 'bg-neutral-600' },
-  { name: 'Stone', hue: 24, sat: 10, light: 30, class: 'bg-stone-600' },
   { name: 'Red', hue: 0, sat: 72, light: 41, class: 'bg-red-600' },
   { name: 'Orange', hue: 25, sat: 95, light: 43, class: 'bg-orange-500' },
   { name: 'Amber', hue: 38, sat: 92, light: 40, class: 'bg-amber-500' },
